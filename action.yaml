@@ -177,21 +177,25 @@ runs:
         mkdir -p $GITHUB_ACTION_PATH/observability/prometheus
         cp $GITHUB_WORKSPACE/${{ inputs.prometheus_config }} "${GITHUB_ACTION_PATH}/observability/prometheus"
 
-    # copy the whole deployment repo (in the github action path) to the deployment repo (in the github workspace)
-    - name: Copy Deployment Repo
+    # copy the deployment from the github action path to the github workspace
+    - name: Copy Deployment Config
       if: ${{ inputs.infrastructure_only == 'false' }}
       shell: bash
       env:
         GITHUB_ACTION_PATH: ${{ github.action_path }}
+        APP_SUBDIR: gha-prometheus-deployment
       run: |
+        app_path=$GITHUB_WORKSPACE/$APP_SUBDIR
 
-        echo "Debugging - ls -la $GITHUB_ACTION_PATH"
-        ls -al $GITHUB_ACTION_PATH
+        echo "Copying app Repo"
+        mkdir -p "$app_path"
+        cp -r  $GITHUB_ACTION_PATH/. "$app_path"
 
-        cp -r $GITHUB_ACTION_PATH/. $GITHUB_WORKSPACE
+        echo "removing operations dir"
+        rm -rf $app_path/operations
 
-        echo "Debugging - ls -la $GITHUB_WORKSPACE"
-        ls -la $GITHUB_WORKSPACE
+        echo "Debugging - ls -la $app_path"
+        ls -la $app_path
 
 
     - name: Deploy with BitOps
@@ -217,7 +221,7 @@ runs:
         docker_install: true
         docker_cloudwatch_enable: true
         docker_cloudwatch_skip_destroy: true
-        docker_repo_app_directory: pixel-tracker-app
+        docker_repo_app_directory: gha-prometheus-deployment
 
         # EC2
         aws_ec2_instance_create: true
