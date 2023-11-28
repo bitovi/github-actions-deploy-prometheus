@@ -1,0 +1,3 @@
+- hosts: bitops_servers
+  roles:
+    - set_prometheus_file_permissions

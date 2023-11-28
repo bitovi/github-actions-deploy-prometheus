@@ -1,0 +1,6 @@
+# https://github.com/bitops-plugins/ansible
+ansible:
+  cli:
+    main-playbook: playbook.yml
+    extra-vars: "@extra-vars.json"
+  options: {}

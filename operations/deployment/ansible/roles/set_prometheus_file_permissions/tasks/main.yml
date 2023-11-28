@@ -1,0 +1,13 @@
+# Update prometheus file permissions
+# https://groups.google.com/g/prometheus-users/c/AA79sJAnnVE?pli=1
+# cd into {{ app_install_root }}/{{ app_repo_name }}
+# sudo chown 1000:1000 -R data/prom_data/
+# sudo chown -R 65534:65534 -R data/prom_data/
+- name: Update prometheus file permissions
+  become: true
+  become_user: root
+  shell: |
+    cd {{ app_install_root }}/{{ app_repo_name }}
+    mkdir -p data/prom_data
+    sudo chown 1000:1000 -R data/prom_data/
+    sudo chown -R 65534:65534 -R data/prom_data/
