@@ -24,26 +24,13 @@ Or, you can hire us for training, consulting, or development. [Set up a free con
 
 ## Requirements
 
-1. An AWS account
+This is a list of requirements you'll need to meet in order to use this action.
+1. An AWS account (yep, that's it!)
 
 
 ### 1. An AWS account
 You'll need [Access Keys](https://docs.aws.amazon.com/powershell/latest/userguide/pstools-appendix-sign-up.html) from an [AWS account](https://aws.amazon.com/premiumsupport/knowledge-center/create-and-activate-aws-account/)
 
-## Environment variables
-
-For envirnoment variables in your app, you can provide:
- - `repo_env` - A file in your repo that contains env vars
- - `ghv_env` - An entry in [Github actions variables](https://docs.github.com/en/actions/learn-github-actions/variables)
- - `dot_env` - An entry in [Github secrets](https://docs.github.com/es/actions/security-guides/encrypted-secrets)
- - `aws_secret_env` - The path to a JSON format secret in AWS
- 
-
-These environment variables are merged (in the following order) to the .env file and provided to both the Prometheus and Grafana services:
- - Terraform passed env vars ( This is not optional nor customizable )
- - Repository checked-in env vars - repo_env file as default. (KEY=VALUE style)
- - Github Secret - Create a secret named DOT_ENV - (KEY=VALUE style)
- - AWS Secret - JSON style like '{"key":"value"}'
 
 ## Example usage
 
@@ -209,6 +196,21 @@ The following inputs can be used as `step.with` keys
 | `aws_vpc_id` | String | AWS VPC ID. Accepts `vpc-###` values. |
 | `aws_vpc_subnet_id` | String | Specify a Subnet to be used with the instance. If none provided, one will be picked. |
 | `aws_vpc_additional_tags` | JSON | A JSON object of additional tags that will be included on created resources. Example: `{"key1": "value1", "key2": "value2"}` |
+
+## Environment variables
+
+For envirnoment variables in your app, you can provide:
+ - `env_repo` - A file in your repo that contains env vars
+ - `env_ghv` - An entry in [Github actions variables](https://docs.github.com/en/actions/learn-github-actions/variables)
+ - `env_ghs` - An entry in [Github secrets](https://docs.github.com/es/actions/security-guides/encrypted-secrets)
+ - `env_aws_secret` - The path to a JSON format secret in AWS
+ 
+
+These environment variables are merged (in the following order) to the .env file and provided to both the Prometheus and Grafana services:
+ - Terraform passed env vars ( This is not optional nor customizable )
+ - Repository checked-in env vars - repo_env file as default. (KEY=VALUE style)
+ - Github Secret - Create a secret named DOT_ENV - (KEY=VALUE style)
+ - AWS Secret - JSON style like '{"key":"value"}'
 
 ## Note about resource identifiers
 
