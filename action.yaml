@@ -30,6 +30,20 @@ inputs:
     required: false
     default: '{}'
 
+  # ENV files
+  env_aws_secret:
+    description: 'Secret name to pull env variables from AWS Secret Manager, could be a comma separated list, read in order. Expected JSON content.'
+    required: false
+  env_repo:
+    description: 'File containing environment variables to be used with the app'
+    required: false
+  env_ghs:
+    description: '`.env` file to be used with the app from Github secrets'
+    required: false
+  env_ghv:
+    description: '`.env` file to be used with the app from Github variables'
+    required: false
+
   # EC2 Instance config
   aws_ec2_instance_type:
     description: 'The AWS EC2 instance type'
@@ -56,10 +70,6 @@ inputs:
   infrastructure_only:
     description: 'Set to true to provision infrastructure (with Terraform) but skip the app deployment (with ansible)'
     default: "false"
-    required: false
-  env_ghs:
-    description: 'Set to true to include a Github Secrets (.env formatted) in the environment variables'
-    default: ""
     required: false
 
   # prometheus stack configuration
@@ -207,7 +217,6 @@ runs:
         gh_action_repo: ${{ github.action_path }}
         gh_action_input_ansible: operations/deployment/ansible
         ansible_skip : ${{ inputs.infrastructure_only }}
-        env_ghs: ${{ inputs.env_ghs }}
 
         # AWS
         aws_access_key_id: ${{ inputs.aws_access_key_id }}
@@ -267,3 +276,9 @@ runs:
         aws_vpc_id: ${{ inputs.aws_vpc_id }}
         aws_vpc_subnet_id: ${{ inputs.aws_vpc_subnet_id }}
         aws_vpc_additional_tags: ${{ inputs.aws_vpc_additional_tags }}
+
+        # ENV files
+        env_aws_secret: ${{ inputs.env_aws_secret }}
+        env_repo: ${{ inputs.env_repo }}
+        env_ghs: ${{ inputs.env_ghs }}
+        env_ghv: ${{ inputs.env_ghv }}
