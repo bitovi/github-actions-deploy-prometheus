@@ -34,6 +34,9 @@ You'll need [Access Keys](https://docs.aws.amazon.com/powershell/latest/userguid
 
 ## Example usage
 
+> **Secrets first!** First, fill out the values in the `.env.example` file. Then, create a secret in your repo called `DOT_ENV` and paste the contents into it. (Do NOT commit any files with your secrets in them!)
+
+
 Create `.github/workflow/deploy.yaml` with the following to build on push.
 
 ### Basic example
@@ -51,9 +54,9 @@ jobs:
       name: Deploy
       uses: bitovi/github-actions-deploy-prometheus@0.1.0
       with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID_SANDBOX}}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY_SANDBOX}}
-        env_ghs: ${{ secrets.DOT_ENV_SANDBOX }}
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID}}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+        env_ghs: ${{ secrets.DOT_ENV }}
 ```
 
 > Once deployed, Visualize the metrics in the Prometheus UI itself (port `:443`) or visualize via Grafana (port `:3000`).
