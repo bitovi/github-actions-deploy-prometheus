@@ -1,5 +1,5 @@
-name: 'Deploy prometheus and grafana to AWS'
-description: 'Deploy prometheus and grafana to AWS'
+name: 'Deploy Prometheus and Grafana'
+description: 'Deploy prometheus and grafana to AWS Virtual Machine (EC2).'
 branding:
   icon: upload-cloud
   color: red
