@@ -162,6 +162,7 @@ The following inputs can be used as `step.with` keys
 |------------------|---------|------------------------------------|
 | `grafana_datasource_dir` | String | Path to the grafana datasource directory. Default is `observability/grafana/datasources`. |
 | `prometheus_config` | String | Path to the prometheus config file. Default is `observability/prometheus/prometheus.yml`. |
+| `prometheus_targets` | String | Comma separated list of targets, like `host1:port1,host2:port2`.|
 <hr/>
 <br/>
 

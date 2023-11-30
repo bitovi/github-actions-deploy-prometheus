@@ -81,6 +81,9 @@ inputs:
     description: 'Path to the prometheus config file'
     default: observability/prometheus/prometheus.yml
     required: false
+  prometheus_targets:
+    description: 'Comma separated list of targets, like `host1:port1,host2:port2`.'
+    required: false
 
   # Stack Management
   tf_stack_destroy:
@@ -186,6 +189,17 @@ runs:
         echo "    Prometheus Config - from ${{ inputs.prometheus_config }} to $GITHUB_ACTION_PATH/observability/prometheus"
         mkdir -p $GITHUB_ACTION_PATH/observability/prometheus
         cp $GITHUB_WORKSPACE/${{ inputs.prometheus_config }} "${GITHUB_ACTION_PATH}/observability/prometheus"
+
+        if [ -n "${{ inputs.prometheus_targets }}" ]; then
+        echo "    Adding Prometheus Targets"
+          IFS=',' read -ra TARGET_ARRAY <<< "${{ inputs.prometheus_targets }}"
+        
+          for TARGET in "${TARGET_ARRAY[@]}"; do
+            if ! grep -qF "$TARGET" "${GITHUB_ACTION_PATH}/observability/prometheus/prometheus.yml"; then
+              yq eval '.scrape_configs[0].static_configs[0].targets += ["'$TARGET'"]' -i "${GITHUB_ACTION_PATH}/observability/prometheus/prometheus.yml"
+            fi
+          done
+        fi
 
     # copy the deployment from the github action path to the github workspace
     - name: Copy Deployment Config
