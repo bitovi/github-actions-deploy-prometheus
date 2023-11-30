@@ -200,6 +200,7 @@ runs:
             fi
           done
         fi
+        cat "${GITHUB_ACTION_PATH}/observability/prometheus/prometheus.yml"
 
     # copy the deployment from the github action path to the github workspace
     - name: Copy Deployment Config
