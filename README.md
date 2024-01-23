@@ -1,14 +1,14 @@
 # Deploy Prometheus
-GitHub action to deploy Prometheus and Grafana.
+`bitovi/github-actions-deploy-prometheus` deploys a functional Prometheus and Grafana stack.
 
+This action uses our new GitHub Actions Commons repository, a library that contains multiple Terraform modules, allowing us to condense all of our tools in one repo, hence continuous improvements are made to it. 
+![alt](https://bitovi-gha-pixel-tracker-deployment-main.bitovi-sandbox.com/pixel/D21uVdWC6MEN4mIbjB88c)
 
 Supported Cloud Providers:
 - AWS
 
 > **Note:** This action is currently in beta.  Please report any issues you find by creating [an Issue](https://github.com/bitovi/github-actions-deploy-prometheus/issues/new) or a [Pull Requests](https://github.com/bitovi/github-actions-deploy-prometheus/pulls)
 
-
-![alt](https://bitovi-gha-pixel-tracker-deployment-main.bitovi-sandbox.com/pixel/D21uVdWC6MEN4mIbjB88c)
 
 <!-- ## Getting Started Intro Video
 [![Getting Started - Youtube](https://img.youtube.com/vi/oya5LuHUCXc/0.jpg)](https://www.youtube.com/watch?v=oya5LuHUCXc) -->
@@ -258,3 +258,9 @@ Would you like to see additional features?  [Create an issue](https://github.com
 
 ## License
 The scripts and documentation in this project are released under the [MIT License](https://github.com/bitovi/github-actions-deploy-prometheus/blob/main/LICENSE).
+
+# Provided by Bitovi
+[Bitovi](https://www.bitovi.com/) is a proud supporter of Open Source software.
+
+# We want to hear from you.
+Come chat with us about open source in our Bitovi community [Discord](https://discord.gg/J7ejFsZnJ4Z)!
