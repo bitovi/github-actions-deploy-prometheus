@@ -162,7 +162,7 @@ runs:
   steps:
     - name: Checkout
       if: ${{ inputs.checkout == 'true' }}
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Invert boolean Variable
       shell: bash
@@ -181,12 +181,9 @@ runs:
         
         # Copy Grafana Datasource
         echo "    Grafana Datasource - from ${{ inputs.grafana_datasource_dir }} to $GITHUB_ACTION_PATH/observability/grafana/datasources"
-        ls -lah "$GITHUB_WORKSPACE/${{ inputs.grafana_datasource_dir }}"
-        ls -lah "${GITHUB_ACTION_PATH}/observability/grafana/datasources"
         if [ -d "$GITHUB_WORKSPACE/${{ inputs.grafana_datasource_dir }}" ]; then
             mkdir -p "$GITHUB_ACTION_PATH/observability/grafana"
             cp -r "$GITHUB_WORKSPACE/${{ inputs.grafana_datasource_dir }}" "${GITHUB_ACTION_PATH}/observability/grafana"
-            ls -lah "${GITHUB_ACTION_PATH}/observability/grafana/datasources"
         else
             echo "    Directory ${{ inputs.grafana_datasource_dir }} not found. Using defaults instead."
         fi
