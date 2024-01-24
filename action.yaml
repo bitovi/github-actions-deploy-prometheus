@@ -181,6 +181,7 @@ runs:
         
         # Copy Grafana Datasource
         echo "    Grafana Datasource - from ${{ inputs.grafana_datasource_dir }} to $GITHUB_ACTION_PATH/observability/grafana/datasources"
+        ls -l "$GITHUB_WORKSPACE/${{ inputs.grafana_datasource_dir }}"
         if [ -d "$GITHUB_WORKSPACE/${{ inputs.grafana_datasource_dir }}" ]; then
             mkdir -p "$GITHUB_ACTION_PATH/observability/grafana/datasources"
             cp "$GITHUB_WORKSPACE/${{ inputs.grafana_datasource_dir }}/*" "${GITHUB_ACTION_PATH}/observability/grafana/datasources"
