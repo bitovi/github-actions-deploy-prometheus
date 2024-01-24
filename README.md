@@ -35,7 +35,7 @@ You'll need [Access Keys](https://docs.aws.amazon.com/powershell/latest/userguid
 ## Example usage
 
 > **Secrets first!** First, fill out the values in the `.env.example` file. Then, create a secret in your repo called `DOT_ENV` and paste the contents into it. (Do NOT commit any files with your secrets in them!)
-
+If not set, Grafana will use the default admin/admin.
 
 Create `.github/workflow/deploy.yaml` with the following to build on push.
 
