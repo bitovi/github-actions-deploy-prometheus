@@ -35,7 +35,7 @@ You'll need [Access Keys](https://docs.aws.amazon.com/powershell/latest/userguid
 ## Example usage
 
 > **Secrets first!** First, fill out the values in the `.env.example` file. Then, create a secret in your repo called `DOT_ENV` and paste the contents into it. (Do NOT commit any files with your secrets in them!)
-
+If not set, Grafana will use the default admin/admin.
 
 Create `.github/workflow/deploy.yaml` with the following to build on push.
 
@@ -52,7 +52,7 @@ jobs:
     steps:
     - id: deploy
       name: Deploy
-      uses: bitovi/github-actions-deploy-prometheus@0.1.0
+      uses: bitovi/github-actions-deploy-prometheus@v0.1.0
       with:
         aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID}}
         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
@@ -78,7 +78,7 @@ jobs:
     steps:
     - id: deploy
       name: Deploy
-      uses: bitovi/github-actions-deploy-prometheus@0.1.0
+      uses: bitovi/github-actions-deploy-prometheus@v0.1.0
       with:
         aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
