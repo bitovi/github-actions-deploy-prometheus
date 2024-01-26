@@ -96,6 +96,8 @@ jobs:
         
         grafana_datasource_dir: sandbox/observability/grafana/datasources
         prometheus_config: sandbox/observability/prometheus/prometheus.yml
+        prometheus_scrape_interval: 60m
+        prometheus_retention_period: 365d
 ```
 
 ## Customizing
@@ -162,6 +164,8 @@ The following inputs can be used as `step.with` keys
 |------------------|---------|------------------------------------|
 | `grafana_datasource_dir` | String | Path to the grafana datasource directory. Default is `observability/grafana/datasources`. |
 | `prometheus_config` | String | Path to the prometheus config file. Default is `observability/prometheus/prometheus.yml`. |
+| `prometheus_scrape_interval` | String | How frequently to scrape targets by default. Default is `15s`. |
+| `prometheus_retention_period` | String | When to remove old data. Default is `15d`. |
 <hr/>
 <br/>
 
