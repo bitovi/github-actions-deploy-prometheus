@@ -81,6 +81,14 @@ inputs:
     description: 'Path to the prometheus config file'
     default: observability/prometheus/prometheus.yml
     required: false
+  prometheus_scrape_interval:
+    description: 'How frequently to scrape targets by default'
+    default: 15s
+    required: false
+  prometheus_retention_period:
+    description: 'When to remove old data. Defaults to 15d.'
+    default: 15d
+    required: false
 
   # Stack Management
   tf_stack_destroy:
@@ -162,7 +170,7 @@ runs:
   steps:
     - name: Checkout
       if: ${{ inputs.checkout == 'true' }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Invert boolean Variable
       shell: bash
@@ -196,6 +204,15 @@ runs:
         else
             echo "    File ${{ inputs.prometheus_config }} not found. Using defaults instead."
         fi
+
+    - name: Set data retention and scrape interval
+      shell: bash
+      run: |
+        echo "Setting retention days and scrape_interval"
+        yq eval -i '.global.scrape_interval = "${{ inputs.prometheus_scrape_interval }}"'  "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+        yq eval -i '.global.evaluation_interval = "${{ inputs.prometheus_scrape_interval }}"'  "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+        yq eval -i '.datasources[0].timeInterval += "${{ inputs.prometheus_scrape_interval }}"'  "${{ github.action_path }}/observability/grafana/datasources/sources.yml"
+        yq eval -i '.services.prometheus.command += ["--storage.tsdb.retention.time=${{ inputs.prometheus_retention_period }}"]' "${{ github.action_path }}/docker-compose.yaml"
 
     # copy the deployment from the github action path to the github workspace
     - name: Copy Deployment Config
