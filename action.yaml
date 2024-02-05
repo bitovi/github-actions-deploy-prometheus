@@ -77,6 +77,10 @@ inputs:
     description: 'Path to the grafana datasource directory'
     default: observability/grafana/datasources
     required: false
+  grafana_scrape_interval:
+    description: 'How frequently to scrape targets by default in the Prometheus data-source.'
+    default: 15s
+    required: false
   prometheus_config:
     description: 'Path to the prometheus config file'
     default: observability/prometheus/prometheus.yml
@@ -88,10 +92,6 @@ inputs:
   prometheus_retention_period:
     description: 'When to remove old data. Defaults to 15d.'
     default: 15d
-    required: false
-  grafana_scrape_interval:
-    description: 'How frequently to scrape targets by default in the Prometheus data-source.'
-    default: 15s
     required: false
 
   # Stack Management
