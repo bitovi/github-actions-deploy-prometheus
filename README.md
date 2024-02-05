@@ -166,6 +166,7 @@ The following inputs can be used as `step.with` keys
 | `prometheus_config` | String | Path to the prometheus config file. Default is `observability/prometheus/prometheus.yml`. |
 | `prometheus_scrape_interval` | String | Will change the global value of scrape_interval. Won't replace the intervals of scrape_config's if set. Default is `15s`. |
 | `prometheus_retention_period` | String | When to remove old data. Default is `15d`. |
+| `grafana_scrape_interval` | String | Will change the global value of Prometheus data source. Default is `15s`. |
 <hr/>
 <br/>
 

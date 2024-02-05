@@ -89,6 +89,10 @@ inputs:
     description: 'When to remove old data. Defaults to 15d.'
     default: 15d
     required: false
+  grafana_scrape_interval:
+    description: 'How frequently to scrape targets by default in the Prometheus data-source.'
+    default: 15s
+    required: false
 
   # Stack Management
   tf_stack_destroy:
@@ -211,7 +215,7 @@ runs:
         echo "Setting retention days and scrape_interval"
         yq eval -i '.global.scrape_interval = "${{ inputs.prometheus_scrape_interval }}"'  "${{ github.action_path }}/observability/prometheus/prometheus.yml"
         yq eval -i '.global.evaluation_interval = "${{ inputs.prometheus_scrape_interval }}"'  "${{ github.action_path }}/observability/prometheus/prometheus.yml"
-        yq eval -i '.datasources[0].timeInterval += "${{ inputs.prometheus_scrape_interval }}"'  "${{ github.action_path }}/observability/grafana/datasources/sources.yml"
+        yq eval -i '.datasources[0].timeInterval += "${{ inputs.grafana_scrape_interval }}"'  "${{ github.action_path }}/observability/grafana/datasources/sources.yml"
         yq eval -i '.services.prometheus.command += ["--storage.tsdb.retention.time=${{ inputs.prometheus_retention_period }}"]' "${{ github.action_path }}/docker-compose.yaml"
 
     # copy the deployment from the github action path to the github workspace
