@@ -163,12 +163,14 @@ The following inputs can be used as `step.with` keys
 | Name             | Type    | Description                        |
 |------------------|---------|------------------------------------|
 | `grafana_datasource_dir` | String | Path to the grafana datasource directory. Default is `observability/grafana/datasources`. |
-| `grafana_scrape_interval` | String | Will change the global value of Prometheus data source. Default is `15s`. |
 | `prometheus_config` | String | Path to the prometheus config file. Default is `observability/prometheus/prometheus.yml`. |
-| `prometheus_scrape_interval` | String | Will change the global value of scrape_interval. Won't replace the intervals of scrape_config's if set. Default is `15s`. |
-| `prometheus_retention_period` | String | When to remove old data. Default is `15d`. |
+| `grafana_scrape_interval`* | String | Will change the global value of Prometheus data source. Default is `15s`. |
+| `prometheus_scrape_interval`* | String | Will change the global value of scrape_interval. Won't replace the intervals of scrape_config's if set. Default is `15s`. |
+| `prometheus_retention_period`* | String | When to remove old data. Default is `15d`. |
 <hr/>
 <br/>
+
+\* Will only apply to default files.  
 
 #### **Stack Management**
 | Name             | Type    | Description                        |
