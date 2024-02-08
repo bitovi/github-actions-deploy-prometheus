@@ -47,7 +47,7 @@ on:
     branches: [ main ]
 
 jobs:
-  EC2-Deploy:
+  Prometheus-Deploy:
     runs-on: ubuntu-latest
     steps:
     - id: deploy
@@ -73,7 +73,7 @@ permissions:
   contents: read
 
 jobs:
-  EC2-Deploy:
+  Prometheus-Deploy:
     runs-on: ubuntu-latest
     steps:
     - id: deploy
@@ -96,8 +96,13 @@ jobs:
         
         grafana_datasource_dir: sandbox/observability/grafana/datasources
         prometheus_config: sandbox/observability/prometheus/prometheus.yml
+        grafana_scrape_interval: 60m
         prometheus_scrape_interval: 60m
         prometheus_retention_period: 365d
+        cadvisor_enable: true
+        cadvisor_extra_targets: "target1:8080,target2:8080"
+        node_exporter_enable: true
+        node_exporter_extra_targets: "target1:9100,target2:9100"
 ```
 
 ## Customizing
