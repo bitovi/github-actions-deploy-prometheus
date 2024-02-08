@@ -272,7 +272,7 @@ runs:
         IFS=',' read -ra target_array <<< "${{ inputs.node_exporter_extra_targets }}"
         for target in "${target_array[@]}"; do
           if ! grep -q "$target" "${{ github.action_path }}/observability/prometheus/prometheus.yml"; then
-            yq eval -i 'select(.scrape_configs[].job_name == "prometheus") | .scrape_configs[] |= (select(.job_name == "prometheus") | .static_configs[0].targets += ["'$target'"])' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+            yq eval -i 'select(.scrape_configs[].job_name == "node-exporter") | .scrape_configs[] |= (select(.job_name == "node-exporter") | .static_configs[0].targets += ["'$target'"])' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
           fi
         done
 
@@ -284,7 +284,7 @@ runs:
         echo "Prometheus yaml"
         cat "${{ github.action_path }}/observability/prometheus/prometheus.yml"
         echo "Grafana sources yaml"
-        "${{ github.action_path }}/observability/grafana/datasources/sources.yml"
+        cat "${{ github.action_path }}/observability/grafana/datasources/sources.yml"
 
     # copy the deployment from the github action path to the github workspace
     - name: Copy Deployment Config
