@@ -104,6 +104,9 @@ inputs:
   node_exporter_extra_targets:
     description: 'Add node-exporter target'
     required: false
+  print_yaml_files:
+    descritpion: 'Prints docker-compose, prometheus and grafana yaml files. For debugging purposes.'
+    required: false
 
   # Stack Management
   tf_stack_destroy:
@@ -277,6 +280,7 @@ runs:
         done
 
     - name: Printing resulting yaml files
+      if: ${{ inputs.print_yaml_files == 'true' }}
       shell: bash
       run: |
         echo "docker-compose yaml"
@@ -307,78 +311,77 @@ runs:
         ls -la $app_path
 
 
-#    - name: Deploy with BitOps
-#      id: deploy
-#      uses: bitovi/github-actions-commons@v0.0.12
-#      with:
-#        # Current repo vars
-#        checkout: false
-#        gh_action_repo: ${{ github.action_path }}
-#        gh_action_input_ansible: operations/deployment/ansible
-#        ansible_skip : ${{ inputs.infrastructure_only }}
-#
-#        # AWS
-#        aws_access_key_id: ${{ inputs.aws_access_key_id }}
-#        aws_secret_access_key: ${{ inputs.aws_secret_access_key }}
-#        aws_session_token: ${{ inputs.aws_session_token }}
-#        aws_default_region: ${{ inputs.aws_default_region }}
-#        aws_resource_identifier: ${{ inputs.aws_resource_identifier }}
-#        aws_additional_tags: ${{ inputs.aws_extra_tags }}
-#
-#        # Docker
-#        docker_install: true
-#        docker_cloudwatch_enable: true
-#        docker_cloudwatch_skip_destroy: true
-#        docker_repo_app_directory: gha-prometheus-deployment
-#
-#        # EC2
-#        aws_ec2_instance_create: true
-#        aws_ec2_ami_filter: ${{ inputs.aws_ec2_ami_filter }}
-#        aws_ec2_iam_instance_profile: ${{ inputs.aws_ec2_instance_profile }}
-#        aws_ec2_instance_type: ${{ inputs.aws_ec2_instance_type }}
-#        aws_ec2_instance_public_ip: true
-#        aws_ec2_create_keypair_sm: ${{ inputs.aws_ec2_create_keypair_sm }}
-#        aws_ec2_instance_root_vol_size: ${{ inputs.aws_ec2_instance_vol_size }}
-#        aws_ec2_additional_tags: ${{ inputs.aws_ec2_additional_tags }}
-#        aws_ec2_port_list:       "9090,3000"
-#        
-#        # AWS ELB
-#        aws_elb_create: true
-#        aws_elb_listen_port:     "443,3000"
-#        aws_elb_app_port:        "9090,3000"
-#        aws_elb_healthcheck:     "TCP:9090"
-#
-#        # Stack management
-#        tf_stack_destroy: ${{ inputs.tf_stack_destroy }}
-#        tf_state_file_name: ${{ inputs.tf_state_file_name }}
-#        tf_state_file_name_append: ${{ inputs.tf_state_file_name_append }}
-#        tf_state_bucket: ${{ inputs.tf_state_bucket }}
-#        tf_state_bucket_destroy: ${{ inputs.tf_state_bucket_destroy }}
-#        tf_state_bucket_provider: 'aws'
-#
-#        # AWS Route53 Domains abd Certificates
-#        aws_r53_enable: true
-#        aws_r53_domain_name: ${{ inputs.aws_domain_name }}
-#        aws_r53_sub_domain_name: ${{ inputs.aws_sub_domain }}
-#        aws_r53_root_domain_deploy: ${{ inputs.aws_root_domain }}
-#        aws_r53_enable_cert: ${{ steps.set-cert.outputs.enable_cert }}
-#        aws_r53_cert_arn: ${{ inputs.aws_cert_arn }}
-#        aws_r53_create_root_cert: ${{ inputs.aws_create_root_cert }}
-#        aws_r53_create_sub_cert: ${{ inputs.aws_create_sub_cert }}
-#
-#        aws_vpc_create: ${{ inputs.aws_vpc_create }}
-#        aws_vpc_name: ${{ inputs.aws_vpc_name }}
-#        aws_vpc_cidr_block: ${{ inputs.aws_vpc_cidr_block }}
-#        aws_vpc_public_subnets: ${{ inputs.aws_vpc_public_subnets }}
-#        aws_vpc_private_subnets: ${{ inputs.aws_vpc_private_subnets }}
-#        aws_vpc_availability_zones: ${{ inputs.aws_vpc_availability_zones }}
-#        aws_vpc_id: ${{ inputs.aws_vpc_id }}
-#        aws_vpc_subnet_id: ${{ inputs.aws_vpc_subnet_id }}
-#        aws_vpc_additional_tags: ${{ inputs.aws_vpc_additional_tags }}
-#
-#        # ENV files
-#        env_aws_secret: ${{ inputs.env_aws_secret }}
-#        env_repo: ${{ inputs.env_repo }}
-#        env_ghs: ${{ inputs.env_ghs }}
-#        env_ghv: ${{ inputs.env_ghv }}
-#
+    - name: Deploy with BitOps
+      id: deploy
+      uses: bitovi/github-actions-commons@v0.0.12
+      with:
+        # Current repo vars
+        checkout: false
+        gh_action_repo: ${{ github.action_path }}
+        gh_action_input_ansible: operations/deployment/ansible
+        ansible_skip : ${{ inputs.infrastructure_only }}
+
+        # AWS
+        aws_access_key_id: ${{ inputs.aws_access_key_id }}
+        aws_secret_access_key: ${{ inputs.aws_secret_access_key }}
+        aws_session_token: ${{ inputs.aws_session_token }}
+        aws_default_region: ${{ inputs.aws_default_region }}
+        aws_resource_identifier: ${{ inputs.aws_resource_identifier }}
+        aws_additional_tags: ${{ inputs.aws_extra_tags }}
+
+        # Docker
+        docker_install: true
+        docker_cloudwatch_enable: true
+        docker_cloudwatch_skip_destroy: true
+        docker_repo_app_directory: gha-prometheus-deployment
+
+        # EC2
+        aws_ec2_instance_create: true
+        aws_ec2_ami_filter: ${{ inputs.aws_ec2_ami_filter }}
+        aws_ec2_iam_instance_profile: ${{ inputs.aws_ec2_instance_profile }}
+        aws_ec2_instance_type: ${{ inputs.aws_ec2_instance_type }}
+        aws_ec2_instance_public_ip: true
+        aws_ec2_create_keypair_sm: ${{ inputs.aws_ec2_create_keypair_sm }}
+        aws_ec2_instance_root_vol_size: ${{ inputs.aws_ec2_instance_vol_size }}
+        aws_ec2_additional_tags: ${{ inputs.aws_ec2_additional_tags }}
+        aws_ec2_port_list:       "9090,3000"
+        
+        # AWS ELB
+        aws_elb_create: true
+        aws_elb_listen_port:     "443,3000"
+        aws_elb_app_port:        "9090,3000"
+        aws_elb_healthcheck:     "TCP:9090"
+
+        # Stack management
+        tf_stack_destroy: ${{ inputs.tf_stack_destroy }}
+        tf_state_file_name: ${{ inputs.tf_state_file_name }}
+        tf_state_file_name_append: ${{ inputs.tf_state_file_name_append }}
+        tf_state_bucket: ${{ inputs.tf_state_bucket }}
+        tf_state_bucket_destroy: ${{ inputs.tf_state_bucket_destroy }}
+        tf_state_bucket_provider: 'aws'
+
+        # AWS Route53 Domains abd Certificates
+        aws_r53_enable: true
+        aws_r53_domain_name: ${{ inputs.aws_domain_name }}
+        aws_r53_sub_domain_name: ${{ inputs.aws_sub_domain }}
+        aws_r53_root_domain_deploy: ${{ inputs.aws_root_domain }}
+        aws_r53_enable_cert: ${{ steps.set-cert.outputs.enable_cert }}
+        aws_r53_cert_arn: ${{ inputs.aws_cert_arn }}
+        aws_r53_create_root_cert: ${{ inputs.aws_create_root_cert }}
+        aws_r53_create_sub_cert: ${{ inputs.aws_create_sub_cert }}
+
+        aws_vpc_create: ${{ inputs.aws_vpc_create }}
+        aws_vpc_name: ${{ inputs.aws_vpc_name }}
+        aws_vpc_cidr_block: ${{ inputs.aws_vpc_cidr_block }}
+        aws_vpc_public_subnets: ${{ inputs.aws_vpc_public_subnets }}
+        aws_vpc_private_subnets: ${{ inputs.aws_vpc_private_subnets }}
+        aws_vpc_availability_zones: ${{ inputs.aws_vpc_availability_zones }}
+        aws_vpc_id: ${{ inputs.aws_vpc_id }}
+        aws_vpc_subnet_id: ${{ inputs.aws_vpc_subnet_id }}
+        aws_vpc_additional_tags: ${{ inputs.aws_vpc_additional_tags }}
+
+        # ENV files
+        env_aws_secret: ${{ inputs.env_aws_secret }}
+        env_repo: ${{ inputs.env_repo }}
+        env_ghs: ${{ inputs.env_ghs }}
+        env_ghv: ${{ inputs.env_ghv }}

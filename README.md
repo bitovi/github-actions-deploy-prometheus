@@ -168,9 +168,10 @@ The following inputs can be used as `step.with` keys
 | `prometheus_scrape_interval` | String | Will set the global value of scrape_interval and evaluation_interval. Won't replace the intervals of scrape_config's if set. Default is `15s`. |
 | `prometheus_retention_period`  | String | When to remove old data. Default is `15d`. |
 | `cadvisor_enable` | Boolean | Adds a cadvisor entry in the docker-compose file to spin up a cadvisor container in docker. |
-| `cadvisor_extra_targets` | String | Add cadvisor targets. Example: `target1:8080,target2:8080` |
+| `cadvisor_extra_targets` | String | Add cadvisor targets. Example: `"target1:8080,target2:8080"` |
 | `node_exporter_enable` | Boolean | Adds a node-exporter entry in the docker-compose file to spin up a ode-exporter container in docker.  |
-| `node_exporter_extra_targets` | String | Add node-exporter targets. Example: `target1:9100,target2:9100`|
+| `node_exporter_extra_targets` | String | Add node-exporter targets. Example: `"target1:9100,target2:9100"`|
+| `print_yaml_files` | Boolean | Prints resulting docker-compose, prometheus and grafana yaml files. |
 <hr/>
 <br/>
 
