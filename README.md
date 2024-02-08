@@ -107,7 +107,7 @@ jobs:
 2. [AWS Configuration](#aws-configuration-inputs)
 3. [Secrets and Environment Variables](#secrets-and-environment-variables-inputs)
 4. [EC2](#ec2-inputs)
-5. [Prometheus](#prometheus-inputs)
+5. [Stack](#stack-inputs)
 6. [Stack Management](#stack-management)
 7. [Domains](#domains)
 8. [VPC](#vpc-inputs)
@@ -159,18 +159,20 @@ The following inputs can be used as `step.with` keys
 <hr/>
 <br/>
 
-#### **Prometheus Inputs**
+#### **Stack Inputs**
 | Name             | Type    | Description                        |
 |------------------|---------|------------------------------------|
 | `grafana_datasource_dir` | String | Path to the grafana datasource directory. Default is `observability/grafana/datasources`. |
 | `prometheus_config` | String | Path to the prometheus config file. Default is `observability/prometheus/prometheus.yml`. |
-| `grafana_scrape_interval`* | String | Will change the global value of Prometheus data source. Default is `15s`. |
-| `prometheus_scrape_interval`* | String | Will change the global value of scrape_interval. Won't replace the intervals of scrape_config's if set. Default is `15s`. |
-| `prometheus_retention_period`* | String | When to remove old data. Default is `15d`. |
+| `grafana_scrape_interval` | String | Will change the global value of **the default** Prometheus data source. Default is `15s`. |
+| `prometheus_scrape_interval` | String | Will set the global value of scrape_interval and evaluation_interval. Won't replace the intervals of scrape_config's if set. Default is `15s`. |
+| `prometheus_retention_period`  | String | When to remove old data. Default is `15d`. |
+| `cadvisor_enable` | Boolean | Adds a cadvisor entry in the docker-compose file to spin up a cadvisor container in docker. |
+| `cadvisor_extra_targets` | String | Add cadvisor targets. Example: `target1:8080,target2:8080` |
+| `node_exporter_enable` | Boolean | Adds a node-exporter entry in the docker-compose file to spin up a ode-exporter container in docker.  |
+| `node_exporter_extra_targets` | String | Add node-exporter targets. Example: `target1:9100,target2:9100`|
 <hr/>
 <br/>
-
-\* Will only apply to default files.  
 
 #### **Stack Management**
 | Name             | Type    | Description                        |

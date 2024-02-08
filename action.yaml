@@ -72,7 +72,7 @@ inputs:
     default: "false"
     required: false
 
-  # prometheus stack configuration
+  # Stack configuration
   grafana_datasource_dir:
     description: 'Path to the grafana datasource directory'
     default: observability/grafana/datasources
@@ -83,7 +83,6 @@ inputs:
     required: false
   grafana_scrape_interval:
     description: 'How frequently to scrape targets by default in the Prometheus data-source.'
-    default: 15s
     required: false
   prometheus_scrape_interval:
     description: 'How frequently to scrape targets by default'
@@ -92,6 +91,18 @@ inputs:
   prometheus_retention_period:
     description: 'When to remove old data. Defaults to 15d.'
     default: 15d
+    required: false
+  cadvisor_enable:
+    description: 'Enable cadvisor container in docker-compose'
+    required: false
+  cadvisor_extra_targets:
+    description: 'Add cadvisor target'
+    required: false
+  node_exporter_enable:
+    description: 'Enable node-exporter container in docker-compose'
+    required: false
+  node_exporter_extra_targets:
+    description: 'Add node-exporter target'
     required: false
 
   # Stack Management
@@ -197,21 +208,83 @@ runs:
             mkdir -p "$GITHUB_ACTION_PATH/observability/grafana"
             cp -r "$GITHUB_WORKSPACE/${{ inputs.grafana_datasource_dir }}" "${GITHUB_ACTION_PATH}/observability/grafana"
         else
-            echo "    Directory ${{ inputs.grafana_datasource_dir }} not found. Using default instead and adjusting scrape interval."
-            yq eval -i '.datasources[0].timeInterval += "${{ inputs.grafana_scrape_interval }}"'  "${{ github.action_path }}/observability/grafana/datasources/sources.yml"
+            echo "    Directory ${{ inputs.grafana_datasource_dir }} not found. Using default instead."
         fi
-        
         # Copy Prometheus Config
         echo "    Prometheus Config - from ${{ inputs.prometheus_config }} to $GITHUB_ACTION_PATH/observability/prometheus"
         if [ -e "$GITHUB_WORKSPACE/${{ inputs.prometheus_config }}" ]; then
             mkdir -p "$GITHUB_ACTION_PATH/observability/prometheus"
             cp "$GITHUB_WORKSPACE/${{ inputs.prometheus_config }}" "${GITHUB_ACTION_PATH}/observability/prometheus"
         else
-            echo "    File ${{ inputs.prometheus_config }} not found. Using default instead and adjusting values."
-            yq eval -i '.global.scrape_interval = "${{ inputs.prometheus_scrape_interval }}"'  "${{ github.action_path }}/observability/prometheus/prometheus.yml"
-            yq eval -i '.global.evaluation_interval = "${{ inputs.prometheus_scrape_interval }}"'  "${{ github.action_path }}/observability/prometheus/prometheus.yml"
-            yq eval -i '.services.prometheus.command += ["--storage.tsdb.retention.time=${{ inputs.prometheus_retention_period }}"]' "${{ github.action_path }}/docker-compose.yaml"
+            echo "    File ${{ inputs.prometheus_config }} not found. Using default instead."
         fi
+
+    - name: Setting up Grafana options
+      if: ${{ inputs.grafana_scrape_interval != '' }}
+      shell: bash
+      run: |
+        # Adding grafana timeInterval if set
+        yq eval -i '.datasources[] |= select(.type == "prometheus" and .isDefault == true) |= . + {"timeInterval": "${{ inputs.grafana_scrape_interval }}"}'  "${{ github.action_path }}/observability/grafana/datasources/sources.yml"
+
+    - name: Setting up Prometheus options
+      shell: bash
+      run: |    
+        # Adding prometheus global defaults
+        yq eval -i '.global.scrape_interval = "${{ inputs.prometheus_scrape_interval }}"'  "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+        yq eval -i '.global.evaluation_interval = "${{ inputs.prometheus_scrape_interval }}"'  "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+        yq eval -i '.services.prometheus.command += ["--storage.tsdb.retention.time=${{ inputs.prometheus_retention_period }}"]' "${{ github.action_path }}/docker-compose.yaml"
+
+    - name: Enable cadvisor
+      if: ${{ inputs.cadvisor_enable == 'true' }}
+      shell: bash
+      run: |
+        yq eval -i 'select(fileIndex == 0) * {"services": {"cadvisor": {"image": "gcr.io/cadvisor/cadvisor", "container_name": "cadvisor", "volumes": ["/:/rootfs:ro", "/var/run:/var/run:ro", "/sys:/sys:ro", "/var/lib/docker/:/var/lib/docker:ro","/dev/disk/:/dev/disk:ro" ], "ports": ["8080:8080"], "restart": "unless-stopped"}}}' "${{ github.action_path }}/docker-compose.yaml"
+        yq eval -i '.scrape_configs += [{"job_name": "cadvisor", "honor_timestamps": true, "metrics_path": "/metrics", "scheme": "http", "follow_redirects": "true", "enable_http2": "true", "static_configs": [{"targets": ["cadvisor:8080"]}}]' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+
+    - name: Add cadvisor targets to prometheus
+      if: ${{ inputs.cadvisor_extra_targets != '' }}
+      shell: bash
+      run: |
+        if ! grep -q "job_name: cadvisor" "${{ github.action_path }}/observability/prometheus/prometheus.yml"; then
+          yq eval -i '.scrape_configs += [{"job_name": "cadvisor", "honor_timestamps": true, "metrics_path": "/metrics", "scheme": "http", "follow_redirects": "true", "enable_http2": "true", "static_configs": [{"targets": []}}]' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+        fi
+        IFS=',' read -ra target_array <<< "${{ inputs.cadvisor_extra_targets }}"
+        for target in "${target_array[@]}"; do
+          if ! grep -q "$target" "${{ github.action_path }}/observability/prometheus/prometheus.yml"; then
+            yq eval -i 'select(.scrape_configs[].job_name == "cadvisor") | .scrape_configs[] |= (select(.job_name == "cadvisor") | .static_configs[0].targets += ["'$target'"])' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+          fi
+        done
+
+    - name: Enable node-exporter
+      if: ${{ inputs.node_exporter_enable == 'true' }}
+      shell: bash
+      run: |
+        yq eval -i 'select(fileIndex == 0) * {"services": {"node-exporter": {"image": "quay.io/prometheus/node-exporter:latest", "container_name": "node-exporter", "volumes": ["/proc:/host/proc:ro", "/sys:/host/sys:ro", "/:/rootfs:ro", "/:/host:ro,rslave" ], "command": ["'--path.rootfs=/host'","'--path.procfs=/host/proc'","'--path.sysfs=/host/sys'","--collector.filesystem.ignored-mount-points", "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"], "ports": ["9100:9100"], "restart": "unless-stopped"}}}' "${{ github.action_path }}/docker-compose.yaml"
+        yq eval -i '.scrape_configs += [{"job_name": "node-exporter", "honor_timestamps": true, "metrics_path": "/metrics", "scheme": "http", "static_configs": [{"targets": ["node-exporte:9100"]}}]' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+
+    - name: Add node-exporter targets to prometheus
+      if: ${{ inputs.node_exporter_extra_targets != '' }}
+      shell: bash
+      run: |
+        if ! grep -q "job_name: node-exporter" "${{ github.action_path }}/observability/prometheus/prometheus.yml"; then
+          yq eval -i '.scrape_configs += [{"job_name": "node-exporter", "honor_timestamps": true, "metrics_path": "/metrics", "scheme": "http", "static_configs": [{"targets": []}}]' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+        fi
+        IFS=',' read -ra target_array <<< "${{ inputs.node_exporter_extra_targets }}"
+        for target in "${target_array[@]}"; do
+          if ! grep -q "$target" "${{ github.action_path }}/observability/prometheus/prometheus.yml"; then
+            yq eval -i 'select(.scrape_configs[].job_name == "prometheus") | .scrape_configs[] |= (select(.job_name == "prometheus") | .static_configs[0].targets += ["'$target'"])' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+          fi
+        done
+
+    - name: Printing resulting yaml files
+      shell: bash
+      run: |
+        echo "docker-compose yaml"
+        cat "${{ github.action_path }}/docker-compose.yaml"
+        echo "Prometheus yaml"
+        cat "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+        echo "Grafana sources yaml"
+        "${{ github.action_path }}/observability/grafana/datasources/sources.yml"
 
     # copy the deployment from the github action path to the github workspace
     - name: Copy Deployment Config
@@ -234,77 +307,78 @@ runs:
         ls -la $app_path
 
 
-    - name: Deploy with BitOps
-      id: deploy
-      uses: bitovi/github-actions-commons@v0.0.12
-      with:
-        # Current repo vars
-        checkout: false
-        gh_action_repo: ${{ github.action_path }}
-        gh_action_input_ansible: operations/deployment/ansible
-        ansible_skip : ${{ inputs.infrastructure_only }}
-
-        # AWS
-        aws_access_key_id: ${{ inputs.aws_access_key_id }}
-        aws_secret_access_key: ${{ inputs.aws_secret_access_key }}
-        aws_session_token: ${{ inputs.aws_session_token }}
-        aws_default_region: ${{ inputs.aws_default_region }}
-        aws_resource_identifier: ${{ inputs.aws_resource_identifier }}
-        aws_additional_tags: ${{ inputs.aws_extra_tags }}
-
-        # Docker
-        docker_install: true
-        docker_cloudwatch_enable: true
-        docker_cloudwatch_skip_destroy: true
-        docker_repo_app_directory: gha-prometheus-deployment
-
-        # EC2
-        aws_ec2_instance_create: true
-        aws_ec2_ami_filter: ${{ inputs.aws_ec2_ami_filter }}
-        aws_ec2_iam_instance_profile: ${{ inputs.aws_ec2_instance_profile }}
-        aws_ec2_instance_type: ${{ inputs.aws_ec2_instance_type }}
-        aws_ec2_instance_public_ip: true
-        aws_ec2_create_keypair_sm: ${{ inputs.aws_ec2_create_keypair_sm }}
-        aws_ec2_instance_root_vol_size: ${{ inputs.aws_ec2_instance_vol_size }}
-        aws_ec2_additional_tags: ${{ inputs.aws_ec2_additional_tags }}
-        aws_ec2_port_list:       "9090,3000"
-        
-        # AWS ELB
-        aws_elb_create: true
-        aws_elb_listen_port:     "443,3000"
-        aws_elb_app_port:        "9090,3000"
-        aws_elb_healthcheck:     "TCP:9090"
-
-        # Stack management
-        tf_stack_destroy: ${{ inputs.tf_stack_destroy }}
-        tf_state_file_name: ${{ inputs.tf_state_file_name }}
-        tf_state_file_name_append: ${{ inputs.tf_state_file_name_append }}
-        tf_state_bucket: ${{ inputs.tf_state_bucket }}
-        tf_state_bucket_destroy: ${{ inputs.tf_state_bucket_destroy }}
-        tf_state_bucket_provider: 'aws'
-
-        # AWS Route53 Domains abd Certificates
-        aws_r53_enable: true
-        aws_r53_domain_name: ${{ inputs.aws_domain_name }}
-        aws_r53_sub_domain_name: ${{ inputs.aws_sub_domain }}
-        aws_r53_root_domain_deploy: ${{ inputs.aws_root_domain }}
-        aws_r53_enable_cert: ${{ steps.set-cert.outputs.enable_cert }}
-        aws_r53_cert_arn: ${{ inputs.aws_cert_arn }}
-        aws_r53_create_root_cert: ${{ inputs.aws_create_root_cert }}
-        aws_r53_create_sub_cert: ${{ inputs.aws_create_sub_cert }}
-
-        aws_vpc_create: ${{ inputs.aws_vpc_create }}
-        aws_vpc_name: ${{ inputs.aws_vpc_name }}
-        aws_vpc_cidr_block: ${{ inputs.aws_vpc_cidr_block }}
-        aws_vpc_public_subnets: ${{ inputs.aws_vpc_public_subnets }}
-        aws_vpc_private_subnets: ${{ inputs.aws_vpc_private_subnets }}
-        aws_vpc_availability_zones: ${{ inputs.aws_vpc_availability_zones }}
-        aws_vpc_id: ${{ inputs.aws_vpc_id }}
-        aws_vpc_subnet_id: ${{ inputs.aws_vpc_subnet_id }}
-        aws_vpc_additional_tags: ${{ inputs.aws_vpc_additional_tags }}
-
-        # ENV files
-        env_aws_secret: ${{ inputs.env_aws_secret }}
-        env_repo: ${{ inputs.env_repo }}
-        env_ghs: ${{ inputs.env_ghs }}
-        env_ghv: ${{ inputs.env_ghv }}
+#    - name: Deploy with BitOps
+#      id: deploy
+#      uses: bitovi/github-actions-commons@v0.0.12
+#      with:
+#        # Current repo vars
+#        checkout: false
+#        gh_action_repo: ${{ github.action_path }}
+#        gh_action_input_ansible: operations/deployment/ansible
+#        ansible_skip : ${{ inputs.infrastructure_only }}
+#
+#        # AWS
+#        aws_access_key_id: ${{ inputs.aws_access_key_id }}
+#        aws_secret_access_key: ${{ inputs.aws_secret_access_key }}
+#        aws_session_token: ${{ inputs.aws_session_token }}
+#        aws_default_region: ${{ inputs.aws_default_region }}
+#        aws_resource_identifier: ${{ inputs.aws_resource_identifier }}
+#        aws_additional_tags: ${{ inputs.aws_extra_tags }}
+#
+#        # Docker
+#        docker_install: true
+#        docker_cloudwatch_enable: true
+#        docker_cloudwatch_skip_destroy: true
+#        docker_repo_app_directory: gha-prometheus-deployment
+#
+#        # EC2
+#        aws_ec2_instance_create: true
+#        aws_ec2_ami_filter: ${{ inputs.aws_ec2_ami_filter }}
+#        aws_ec2_iam_instance_profile: ${{ inputs.aws_ec2_instance_profile }}
+#        aws_ec2_instance_type: ${{ inputs.aws_ec2_instance_type }}
+#        aws_ec2_instance_public_ip: true
+#        aws_ec2_create_keypair_sm: ${{ inputs.aws_ec2_create_keypair_sm }}
+#        aws_ec2_instance_root_vol_size: ${{ inputs.aws_ec2_instance_vol_size }}
+#        aws_ec2_additional_tags: ${{ inputs.aws_ec2_additional_tags }}
+#        aws_ec2_port_list:       "9090,3000"
+#        
+#        # AWS ELB
+#        aws_elb_create: true
+#        aws_elb_listen_port:     "443,3000"
+#        aws_elb_app_port:        "9090,3000"
+#        aws_elb_healthcheck:     "TCP:9090"
+#
+#        # Stack management
+#        tf_stack_destroy: ${{ inputs.tf_stack_destroy }}
+#        tf_state_file_name: ${{ inputs.tf_state_file_name }}
+#        tf_state_file_name_append: ${{ inputs.tf_state_file_name_append }}
+#        tf_state_bucket: ${{ inputs.tf_state_bucket }}
+#        tf_state_bucket_destroy: ${{ inputs.tf_state_bucket_destroy }}
+#        tf_state_bucket_provider: 'aws'
+#
+#        # AWS Route53 Domains abd Certificates
+#        aws_r53_enable: true
+#        aws_r53_domain_name: ${{ inputs.aws_domain_name }}
+#        aws_r53_sub_domain_name: ${{ inputs.aws_sub_domain }}
+#        aws_r53_root_domain_deploy: ${{ inputs.aws_root_domain }}
+#        aws_r53_enable_cert: ${{ steps.set-cert.outputs.enable_cert }}
+#        aws_r53_cert_arn: ${{ inputs.aws_cert_arn }}
+#        aws_r53_create_root_cert: ${{ inputs.aws_create_root_cert }}
+#        aws_r53_create_sub_cert: ${{ inputs.aws_create_sub_cert }}
+#
+#        aws_vpc_create: ${{ inputs.aws_vpc_create }}
+#        aws_vpc_name: ${{ inputs.aws_vpc_name }}
+#        aws_vpc_cidr_block: ${{ inputs.aws_vpc_cidr_block }}
+#        aws_vpc_public_subnets: ${{ inputs.aws_vpc_public_subnets }}
+#        aws_vpc_private_subnets: ${{ inputs.aws_vpc_private_subnets }}
+#        aws_vpc_availability_zones: ${{ inputs.aws_vpc_availability_zones }}
+#        aws_vpc_id: ${{ inputs.aws_vpc_id }}
+#        aws_vpc_subnet_id: ${{ inputs.aws_vpc_subnet_id }}
+#        aws_vpc_additional_tags: ${{ inputs.aws_vpc_additional_tags }}
+#
+#        # ENV files
+#        env_aws_secret: ${{ inputs.env_aws_secret }}
+#        env_repo: ${{ inputs.env_repo }}
+#        env_ghs: ${{ inputs.env_ghs }}
+#        env_ghv: ${{ inputs.env_ghv }}
+#
