@@ -242,14 +242,14 @@ runs:
       shell: bash
       run: |
         yq eval -i 'select(fileIndex == 0) * {"services": {"cadvisor": {"image": "gcr.io/cadvisor/cadvisor", "container_name": "cadvisor", "volumes": ["/:/rootfs:ro", "/var/run:/var/run:ro", "/sys:/sys:ro", "/var/lib/docker/:/var/lib/docker:ro","/dev/disk/:/dev/disk:ro" ], "ports": ["8080:8080"], "restart": "unless-stopped"}}}' "${{ github.action_path }}/docker-compose.yaml"
-        yq eval -i '.scrape_configs += [{"job_name": "cadvisor", "honor_timestamps": true, "metrics_path": "/metrics", "scheme": "http", "follow_redirects": "true", "enable_http2": "true", "static_configs": [{"targets": ["cadvisor:8080"]}]}]' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+        yq eval -i '.scrape_configs += [{"job_name": "cadvisor", "honor_timestamps": true, "metrics_path": "/metrics", "scheme": "http", "follow_redirects": true, "enable_http2": true, "static_configs": [{"targets": ["cadvisor:8080"]}]}]' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
 
     - name: Add cadvisor targets to prometheus
       if: ${{ inputs.cadvisor_extra_targets != '' }}
       shell: bash
       run: |
         if ! grep -q "job_name: cadvisor" "${{ github.action_path }}/observability/prometheus/prometheus.yml"; then
-          yq eval -i '.scrape_configs += [{"job_name": "cadvisor", "honor_timestamps": true, "metrics_path": "/metrics", "scheme": "http", "follow_redirects": "true", "enable_http2": "true", "static_configs": [{"targets": []}]}]' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+          yq eval -i '.scrape_configs += [{"job_name": "cadvisor", "honor_timestamps": true, "metrics_path": "/metrics", "scheme": "http", "follow_redirects": true, "enable_http2": true, "static_configs": [{"targets": []}]}]' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
         fi
         IFS=',' read -ra target_array <<< "${{ inputs.cadvisor_extra_targets }}"
         for target in "${target_array[@]}"; do
