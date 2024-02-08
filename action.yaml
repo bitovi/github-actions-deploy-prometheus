@@ -72,7 +72,7 @@ inputs:
     default: "false"
     required: false
 
-  # prometheus stack configuration
+  # Stack configuration
   grafana_datasource_dir:
     description: 'Path to the grafana datasource directory'
     default: observability/grafana/datasources
@@ -80,6 +80,32 @@ inputs:
   prometheus_config:
     description: 'Path to the prometheus config file'
     default: observability/prometheus/prometheus.yml
+    required: false
+  grafana_scrape_interval:
+    description: 'How frequently to scrape targets by default in the Prometheus data-source.'
+    required: false
+  prometheus_scrape_interval:
+    description: 'How frequently to scrape targets by default'
+    default: 15s
+    required: false
+  prometheus_retention_period:
+    description: 'When to remove old data. Defaults to 15d.'
+    default: 15d
+    required: false
+  cadvisor_enable:
+    description: 'Enable cadvisor container in docker-compose'
+    required: false
+  cadvisor_extra_targets:
+    description: 'Add cadvisor target'
+    required: false
+  node_exporter_enable:
+    description: 'Enable node-exporter container in docker-compose'
+    required: false
+  node_exporter_extra_targets:
+    description: 'Add node-exporter target'
+    required: false
+  print_yaml_files:
+    descritpion: 'Prints docker-compose, prometheus and grafana yaml files. For debugging purposes.'
     required: false
 
   # Stack Management
@@ -162,7 +188,7 @@ runs:
   steps:
     - name: Checkout
       if: ${{ inputs.checkout == 'true' }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Invert boolean Variable
       shell: bash
@@ -185,17 +211,84 @@ runs:
             mkdir -p "$GITHUB_ACTION_PATH/observability/grafana"
             cp -r "$GITHUB_WORKSPACE/${{ inputs.grafana_datasource_dir }}" "${GITHUB_ACTION_PATH}/observability/grafana"
         else
-            echo "    Directory ${{ inputs.grafana_datasource_dir }} not found. Using defaults instead."
+            echo "    Directory ${{ inputs.grafana_datasource_dir }} not found. Using default instead."
         fi
-        
         # Copy Prometheus Config
         echo "    Prometheus Config - from ${{ inputs.prometheus_config }} to $GITHUB_ACTION_PATH/observability/prometheus"
         if [ -e "$GITHUB_WORKSPACE/${{ inputs.prometheus_config }}" ]; then
             mkdir -p "$GITHUB_ACTION_PATH/observability/prometheus"
             cp "$GITHUB_WORKSPACE/${{ inputs.prometheus_config }}" "${GITHUB_ACTION_PATH}/observability/prometheus"
         else
-            echo "    File ${{ inputs.prometheus_config }} not found. Using defaults instead."
+            echo "    File ${{ inputs.prometheus_config }} not found. Using default instead."
         fi
+
+    - name: Setting up Grafana options
+      if: ${{ inputs.grafana_scrape_interval != '' }}
+      shell: bash
+      run: |
+        # Adding grafana timeInterval if set
+        yq eval -i '.datasources[] |= select(.type == "prometheus" and .isDefault == true) |= . + {"timeInterval": "${{ inputs.grafana_scrape_interval }}"}'  "${{ github.action_path }}/observability/grafana/datasources/sources.yml"
+
+    - name: Setting up Prometheus options
+      shell: bash
+      run: |    
+        # Adding prometheus global defaults
+        yq eval -i '.global.scrape_interval = "${{ inputs.prometheus_scrape_interval }}"'  "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+        yq eval -i '.global.evaluation_interval = "${{ inputs.prometheus_scrape_interval }}"'  "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+        yq eval -i '.services.prometheus.command += ["--storage.tsdb.retention.time=${{ inputs.prometheus_retention_period }}"]' "${{ github.action_path }}/docker-compose.yaml"
+
+    - name: Enable cadvisor
+      if: ${{ inputs.cadvisor_enable == 'true' }}
+      shell: bash
+      run: |
+        yq eval -i 'select(fileIndex == 0) * {"services": {"cadvisor": {"image": "gcr.io/cadvisor/cadvisor", "container_name": "cadvisor", "volumes": ["/:/rootfs:ro", "/var/run:/var/run:ro", "/sys:/sys:ro", "/var/lib/docker/:/var/lib/docker:ro","/dev/disk/:/dev/disk:ro" ], "ports": ["8080:8080"], "restart": "unless-stopped"}}}' "${{ github.action_path }}/docker-compose.yaml"
+        yq eval -i '.scrape_configs += [{"job_name": "cadvisor", "honor_timestamps": true, "metrics_path": "/metrics", "scheme": "http", "follow_redirects": true, "enable_http2": true, "static_configs": [{"targets": ["cadvisor:8080"]}]}]' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+
+    - name: Add cadvisor targets to prometheus
+      if: ${{ inputs.cadvisor_extra_targets != '' }}
+      shell: bash
+      run: |
+        if ! grep -q "job_name: cadvisor" "${{ github.action_path }}/observability/prometheus/prometheus.yml"; then
+          yq eval -i '.scrape_configs += [{"job_name": "cadvisor", "honor_timestamps": true, "metrics_path": "/metrics", "scheme": "http", "follow_redirects": true, "enable_http2": true, "static_configs": [{"targets": []}]}]' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+        fi
+        IFS=',' read -ra target_array <<< "${{ inputs.cadvisor_extra_targets }}"
+        for target in "${target_array[@]}"; do
+          if ! grep -q "$target" "${{ github.action_path }}/observability/prometheus/prometheus.yml"; then
+            yq eval -i 'select(.scrape_configs[].job_name == "cadvisor") | .scrape_configs[] |= (select(.job_name == "cadvisor") | .static_configs[0].targets += ["'$target'"])' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+          fi
+        done
+
+    - name: Enable node-exporter
+      if: ${{ inputs.node_exporter_enable == 'true' }}
+      shell: bash
+      run: |
+        yq eval -i 'select(fileIndex == 0) * {"services": {"node-exporter": {"image": "quay.io/prometheus/node-exporter:latest", "container_name": "node-exporter", "volumes": ["/proc:/host/proc:ro", "/sys:/host/sys:ro", "/:/rootfs:ro", "/:/host:ro,rslave" ], "command": ["'--path.rootfs=/host'","'--path.procfs=/host/proc'","'--path.sysfs=/host/sys'","--collector.filesystem.ignored-mount-points", "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"], "ports": ["9100:9100"], "restart": "unless-stopped"}}}' "${{ github.action_path }}/docker-compose.yaml"
+        yq eval -i '.scrape_configs += [{"job_name": "node-exporter", "honor_timestamps": true, "metrics_path": "/metrics", "scheme": "http", "static_configs": [{"targets": ["node-exporter:9100"]}]}]' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+
+    - name: Add node-exporter targets to prometheus
+      if: ${{ inputs.node_exporter_extra_targets != '' }}
+      shell: bash
+      run: |
+        if ! grep -q "job_name: node-exporter" "${{ github.action_path }}/observability/prometheus/prometheus.yml"; then
+          yq eval -i '.scrape_configs += [{"job_name": "node-exporter", "honor_timestamps": true, "metrics_path": "/metrics", "scheme": "http", "static_configs": [{"targets": []}]}]' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+        fi
+        IFS=',' read -ra target_array <<< "${{ inputs.node_exporter_extra_targets }}"
+        for target in "${target_array[@]}"; do
+          if ! grep -q "$target" "${{ github.action_path }}/observability/prometheus/prometheus.yml"; then
+            yq eval -i 'select(.scrape_configs[].job_name == "node-exporter") | .scrape_configs[] |= (select(.job_name == "node-exporter") | .static_configs[0].targets += ["'$target'"])' "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+          fi
+        done
+
+    - name: Printing resulting yaml files
+      if: ${{ inputs.print_yaml_files == 'true' }}
+      shell: bash
+      run: |
+        echo "docker-compose yaml"
+        cat "${{ github.action_path }}/docker-compose.yaml"
+        echo "Prometheus yaml"
+        cat "${{ github.action_path }}/observability/prometheus/prometheus.yml"
+        echo "Grafana sources yaml"
+        cat "${{ github.action_path }}/observability/grafana/datasources/sources.yml"
 
     # copy the deployment from the github action path to the github workspace
     - name: Copy Deployment Config
