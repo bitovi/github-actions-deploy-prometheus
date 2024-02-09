@@ -35,7 +35,7 @@ You'll need [Access Keys](https://docs.aws.amazon.com/powershell/latest/userguid
 ## Example usage
 
 > **Secrets first!** First, fill out the values in the `.env.example` file. Then, create a secret in your repo called `DOT_ENV` and paste the contents into it. (Do NOT commit any files with your secrets in them!)
-If not set, Grafana will use the default admin/admin.
+If not set, Grafana will use the default admin/admin. (You can change this in the first login.)
 
 Create `.github/workflow/deploy.yaml` with the following to build on push.
 
@@ -160,7 +160,6 @@ The following inputs can be used as `step.with` keys
 | `aws_ec2_instance_vol_size` | String | Root disk size for the EC2 instance. Default is `10`. |
 | `aws_ec2_additional_tags` | JSON | A JSON object of additional tags that will be included on created resources. Example: `{"key1": "value1", "key2": "value2"}` |
 | `aws_ec2_ami_filter` | String | AMI filter to use when searching for an AMI to use for the EC2 instance. Defaults to `ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*`. |
-| `infrastructure_only` | Boolean | Set to `true` to provision infrastructure (with Terraform) but skip the app deployment (with ansible). Default is `false`. |
 <hr/>
 <br/>
 
@@ -207,14 +206,14 @@ The following inputs can be used as `step.with` keys
 #### **VPC Inputs**
 | Name             | Type    | Description                        |
 |------------------|---------|------------------------------------|
-| `aws_vpc_create` | Boolean | Define if a VPC should be created. Default is `true`. |
+| `aws_vpc_create` | Boolean | Define if a VPC should be created. Default is `false`. |
 | `aws_vpc_name` | String | Set a specific name for the VPC. |
 | `aws_vpc_cidr_block` | String | Define Base CIDR block which is divided into subnet CIDR blocks. Defaults to `10.0.0.0/16`. |
 | `aws_vpc_public_subnets` | String | Comma separated list of public subnets. Defaults to `10.10.110.0/24`. |
 | `aws_vpc_private_subnets` | String | Comma separated list of private subnets. If none, none will be created. |
 | `aws_vpc_availability_zones` | String | Comma separated list of availability zones. Defaults to `aws_default_region`. |
-| `aws_vpc_id` | String | AWS VPC ID. Accepts `vpc-###` values. |
-| `aws_vpc_subnet_id` | String | Specify a Subnet to be used with the instance. If none provided, one will be picked. |
+| `aws_vpc_id` | String | **Existing** AWS VPC ID to use. Accepts `vpc-###` values. |
+| `aws_vpc_subnet_id` | String | **Existing** AWS VPC Subnet ID. If none provided, will pick one. (Ideal when there's only one). |
 | `aws_vpc_additional_tags` | JSON | A JSON object of additional tags that will be included on created resources. Example: `{"key1": "value1", "key2": "value2"}` |
 
 ## Environment variables

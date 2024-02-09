@@ -47,7 +47,7 @@ inputs:
   # EC2 Instance config
   aws_ec2_instance_type:
     description: 'The AWS EC2 instance type'
-    default: t2.medium
+    default: t3.medium
     required: false
   aws_ec2_instance_profile:
     description: 'The AWS IAM instance profile to use for the EC2 instance. Use if you want to pass an AWS role with specific permissions granted to the instance'
@@ -66,10 +66,6 @@ inputs:
   aws_ec2_ami_filter:
     description: 'AMI filter to use when searching for an AMI to use for the EC2 instance. Defaults to `ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*`'
     default: 'ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*'
-    required: false
-  infrastructure_only:
-    description: 'Set to true to provision infrastructure (with Terraform) but skip the app deployment (with ansible)'
-    default: "false"
     required: false
 
   # Stack configuration
@@ -348,7 +344,7 @@ runs:
         
         # AWS ELB
         aws_elb_create: true
-        aws_elb_listen_port:     "443,3000"
+        aws_elb_listen_port:     "9090,3000"
         aws_elb_app_port:        "9090,3000"
         aws_elb_healthcheck:     "TCP:9090"
 
