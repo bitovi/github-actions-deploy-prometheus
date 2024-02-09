@@ -199,7 +199,7 @@ inputs:
   aws_elb_listen_port:
     description: 'Load balancer listening port. Defaults to 80 if NO FQDN provided, 443 if FQDN provided'
     required: false
-    default: "9090,3000"
+    default: "3000,9090"
 
 outputs:
   vm_url:
