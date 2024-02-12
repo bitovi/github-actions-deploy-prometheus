@@ -35,7 +35,7 @@ You'll need [Access Keys](https://docs.aws.amazon.com/powershell/latest/userguid
 ## Example usage
 
 > **Secrets first!** First, fill out the values in the `.env.example` file. Then, create a secret in your repo called `DOT_ENV` and paste the contents into it. (Do NOT commit any files with your secrets in them!)
-If not set, Grafana will use the default admin/admin.
+If not set, Grafana will use the default admin/admin. (You can change this in the first login.)
 
 Create `.github/workflow/deploy.yaml` with the following to build on push.
 
@@ -52,7 +52,7 @@ jobs:
     steps:
     - id: deploy
       name: Deploy
-      uses: bitovi/github-actions-deploy-prometheus@v0.1.0
+      uses: bitovi/github-actions-deploy-prometheus@v0.1.1
       with:
         aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID}}
         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
@@ -78,7 +78,7 @@ jobs:
     steps:
     - id: deploy
       name: Deploy
-      uses: bitovi/github-actions-deploy-prometheus@v0.1.0
+      uses: bitovi/github-actions-deploy-prometheus@v0.1.1
       with:
         aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -103,6 +103,9 @@ jobs:
         cadvisor_extra_targets: "target1:8080,target2:8080"
         node_exporter_enable: true
         node_exporter_extra_targets: "target1:9100,target2:9100"
+        # Advanced options
+        aws_ec2_port_list: "9090,3000,8080,9100"
+        aws_elb_create: false
 ```
 
 ## Customizing
@@ -116,6 +119,7 @@ jobs:
 6. [Stack Management](#stack-management)
 7. [Domains](#domains)
 8. [VPC](#vpc-inputs)
+9. [Advanced Options](#advanced-options)
 
 
 The following inputs can be used as `step.with` keys
@@ -154,13 +158,12 @@ The following inputs can be used as `step.with` keys
 #### **EC2 Inputs**
 | Name             | Type    | Description                        |
 |------------------|---------|------------------------------------|
-| `aws_ec2_instance_type` | String | The AWS EC2 instance type. Default is `t2.medium`. |
+| `aws_ec2_instance_type` | String | The AWS EC2 instance type. Default is `t3.medium`. |
 | `aws_ec2_instance_profile` | String | The AWS IAM instance profile to use for the EC2 instance. Use if you want to pass an AWS role with specific permissions granted to the instance. |
 | `aws_ec2_create_keypair_sm` | Boolean | Creates a Secret in AWS secret manager to store a kypair. Default is `false`. |
 | `aws_ec2_instance_vol_size` | String | Root disk size for the EC2 instance. Default is `10`. |
 | `aws_ec2_additional_tags` | JSON | A JSON object of additional tags that will be included on created resources. Example: `{"key1": "value1", "key2": "value2"}` |
 | `aws_ec2_ami_filter` | String | AMI filter to use when searching for an AMI to use for the EC2 instance. Defaults to `ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*`. |
-| `infrastructure_only` | Boolean | Set to `true` to provision infrastructure (with Terraform) but skip the app deployment (with ansible). Default is `false`. |
 <hr/>
 <br/>
 
@@ -207,15 +210,50 @@ The following inputs can be used as `step.with` keys
 #### **VPC Inputs**
 | Name             | Type    | Description                        |
 |------------------|---------|------------------------------------|
-| `aws_vpc_create` | Boolean | Define if a VPC should be created. Default is `true`. |
+| `aws_vpc_create` | Boolean | Define if a VPC should be created. Default is `false`. |
 | `aws_vpc_name` | String | Set a specific name for the VPC. |
 | `aws_vpc_cidr_block` | String | Define Base CIDR block which is divided into subnet CIDR blocks. Defaults to `10.0.0.0/16`. |
 | `aws_vpc_public_subnets` | String | Comma separated list of public subnets. Defaults to `10.10.110.0/24`. |
 | `aws_vpc_private_subnets` | String | Comma separated list of private subnets. If none, none will be created. |
 | `aws_vpc_availability_zones` | String | Comma separated list of availability zones. Defaults to `aws_default_region`. |
-| `aws_vpc_id` | String | AWS VPC ID. Accepts `vpc-###` values. |
-| `aws_vpc_subnet_id` | String | Specify a Subnet to be used with the instance. If none provided, one will be picked. |
+| `aws_vpc_id` | String | **Existing** AWS VPC ID to use. Accepts `vpc-###` values. |
+| `aws_vpc_subnet_id` | String | **Existing** AWS VPC Subnet ID. If none provided, will pick one. (Ideal when there's only one). |
 | `aws_vpc_additional_tags` | JSON | A JSON object of additional tags that will be included on created resources. Example: `{"key1": "value1", "key2": "value2"}` |
+<hr/>
+<br/>
+
+#### **Advanced Options**
+| Name             | Type    | Description                        |
+|------------------|---------|------------------------------------|
+| `docker_cloudwatch_enable` | Boolean | Toggle cloudwatch creation for Docker. Defaults to `true`. |
+| `docker_cloudwatch_skip_destroy` | Boolean | Toggle deletion or not when destroying the stack. Defaults to `false`. |
+| `aws_ec2_instance_public_ip` | Boolean | Add a public IP to the instance or not. Defaults to `true`. |
+| `aws_ec2_port_list` | String | EC2 Ports to be exposed. Should be set to `9090,3000` if ELB is disabled. |
+| `aws_elb_create` | Boolean | Toggles the creation of a load balancer and map ports to the EC2 instance. Defaults to `true`.|
+| `aws_elb_app_port` | String | Port in the EC2 instance to be redirected to. Default is `9090,3000`. | 
+| `aws_elb_listen_port` | String | Load balancer listening port. Default is `9090,3000`. |
+<hr/>
+<br/>
+
+`aws_ec2_instance_public_ip` is a must if deployment is done using GitHub runners. Needed to access instance and install Docker. Only set this to `false` if using a self-hosted GitHub runner with access to your private IP.
+
+As a default, Prometheus and Grafana ports (9090,3000) for the EC2 instance are being exposed. (`aws_ec2_port_list`). An ELB will also be created exposing them too. 
+
+The load balancer will listen for outside connections (`aws_elb_listen_port`) and forward this traffic to the defined ports (`aws_elb_app_port`). 
+You can change all of this values to expose the services you wish, directly from the EC2 instance or through the ELB. (No need to expose EC2 instance port for ELB ports to work.).
+You can even set different listening ports for the ELB. (`aws_elb_listen_port` will map 1 to 1 with `aws_elb_app_port`.).
+
+**Tip**: Setting `aws_elb_listen_port` to `3000` will only expose Grafana. No need to set anything else.
+
+ELB is a **must** if you intend to use DNS and/or certificates. (`aws_elb_create` must be `true`).
+
+#### Default ports are:
+| App     | Port | 
+|-|-|
+| Grafana | 3000 |
+| Prometheus | 9090 |
+| cadvisor | 8080 |
+| node-exporter | 9100 | 
 
 ## Environment variables
 

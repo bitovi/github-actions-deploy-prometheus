@@ -47,7 +47,7 @@ inputs:
   # EC2 Instance config
   aws_ec2_instance_type:
     description: 'The AWS EC2 instance type'
-    default: t2.medium
+    default: t3.medium
     required: false
   aws_ec2_instance_profile:
     description: 'The AWS IAM instance profile to use for the EC2 instance. Use if you want to pass an AWS role with specific permissions granted to the instance'
@@ -66,10 +66,6 @@ inputs:
   aws_ec2_ami_filter:
     description: 'AMI filter to use when searching for an AMI to use for the EC2 instance. Defaults to `ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*`'
     default: 'ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*'
-    required: false
-  infrastructure_only:
-    description: 'Set to true to provision infrastructure (with Terraform) but skip the app deployment (with ansible)'
-    default: "false"
     required: false
 
   # Stack configuration
@@ -177,11 +173,38 @@ inputs:
     description: 'A JSON object of additional tags that will be included on created resources. Example: `{"key1": "value1", "key2": "value2"}`'
     required: false
 
+  # Advanced Options
+  docker_cloudwatch_enable:
+    description: 'Toggle cloudwatch creation for Docker containers.'
+    required: false
+    default: true
+  docker_cloudwatch_skip_destroy:
+    description: 'Toggle deletion or not when destroying the stack.'
+    required: false
+    default: false
+  aws_ec2_instance_public_ip:
+    description: 'Add a public IP to the instance or not. (Not an Elastic IP)'
+    required: false
+    default: true
+  aws_ec2_port_list:
+    description: 'List of ports to be enabled as an ingress rule in the EC2 SG, in a [xx,yy] format - Not the ELB'
+    required: false
+  aws_elb_create:
+    description: 'Create a load balancer and map ports to the EC2 instance.'
+    required: false
+    default: true
+  aws_elb_app_port:
+    description: 'Port to expose for the app'
+    required: false
+  aws_elb_listen_port:
+    description: 'Load balancer listening port. Defaults to 80 if NO FQDN provided, 443 if FQDN provided'
+    required: false
+    default: "3000,9090"
+
 outputs:
   vm_url:
     description: 'The URL of the generated app'
     value: ${{ steps.deploy.outputs.vm_url }}
-#        CREATE_VPC: ${{ inputs.aws_create_vpc }}
 
 runs:
   using: 'composite'
@@ -319,7 +342,6 @@ runs:
         checkout: false
         gh_action_repo: ${{ github.action_path }}
         gh_action_input_ansible: operations/deployment/ansible
-        ansible_skip : ${{ inputs.infrastructure_only }}
 
         # AWS
         aws_access_key_id: ${{ inputs.aws_access_key_id }}
@@ -331,8 +353,8 @@ runs:
 
         # Docker
         docker_install: true
-        docker_cloudwatch_enable: true
-        docker_cloudwatch_skip_destroy: true
+        docker_cloudwatch_enable: ${{ inputs.docker_cloudwatch_enable }}
+        docker_cloudwatch_skip_destroy: ${{ inputs.docker_cloudwatch_skip_destroy }}
         docker_repo_app_directory: gha-prometheus-deployment
 
         # EC2
@@ -340,17 +362,17 @@ runs:
         aws_ec2_ami_filter: ${{ inputs.aws_ec2_ami_filter }}
         aws_ec2_iam_instance_profile: ${{ inputs.aws_ec2_instance_profile }}
         aws_ec2_instance_type: ${{ inputs.aws_ec2_instance_type }}
-        aws_ec2_instance_public_ip: true
+        aws_ec2_instance_public_ip: ${{ inputs.aws_ec2_instance_public_ip }}
         aws_ec2_create_keypair_sm: ${{ inputs.aws_ec2_create_keypair_sm }}
         aws_ec2_instance_root_vol_size: ${{ inputs.aws_ec2_instance_vol_size }}
         aws_ec2_additional_tags: ${{ inputs.aws_ec2_additional_tags }}
-        aws_ec2_port_list:       "9090,3000"
+        aws_ec2_port_list: ${{ inputs.aws_ec2_port_list }}
         
         # AWS ELB
-        aws_elb_create: true
-        aws_elb_listen_port:     "443,3000"
-        aws_elb_app_port:        "9090,3000"
-        aws_elb_healthcheck:     "TCP:9090"
+        aws_elb_create: ${{ inputs.aws_elb_create }}
+        aws_elb_listen_port: ${{ inputs.aws_elb_listen_port }}
+        aws_elb_app_port: ${{ inputs.aws_elb_app_port }}
+        aws_elb_healthcheck: "TCP:9090"
 
         # Stack management
         tf_stack_destroy: ${{ inputs.tf_stack_destroy }}
@@ -361,7 +383,7 @@ runs:
         tf_state_bucket_provider: 'aws'
 
         # AWS Route53 Domains abd Certificates
-        aws_r53_enable: true
+        aws_r53_enable: ${{ inputs.aws_elb_create }}
         aws_r53_domain_name: ${{ inputs.aws_domain_name }}
         aws_r53_sub_domain_name: ${{ inputs.aws_sub_domain }}
         aws_r53_root_domain_deploy: ${{ inputs.aws_root_domain }}
