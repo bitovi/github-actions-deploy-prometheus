@@ -59,7 +59,7 @@ jobs:
         env_ghs: ${{ secrets.DOT_ENV }}
 ```
 
-> Once deployed, Visualize the metrics in the Prometheus UI itself (port `:443`) or visualize via Grafana (port `:3000`).
+> Once deployed, Visualize the metrics in the Prometheus UI itself (port `:9090`) or visualize via Grafana (port `:3000`).
 
 ### Advanced example
 
