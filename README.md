@@ -218,6 +218,9 @@ The following inputs can be used as `step.with` keys
 | `aws_vpc_availability_zones` | String | Comma separated list of availability zones. Defaults to `aws_default_region`. |
 | `aws_vpc_id` | String | **Existing** AWS VPC ID to use. Accepts `vpc-###` values. |
 | `aws_vpc_subnet_id` | String | **Existing** AWS VPC Subnet ID. If none provided, will pick one. (Ideal when there's only one). |
+| `aws_vpc_enable_nat_gateway` | Boolean | Adds a NAT gateway for each public subnet. Defaults to `false`.|
+| `aws_vpc_single_nat_gateway` | Boolean | Toggles only one NAT gateway for all of the public subnets. Defaults to `false`.|
+| `aws_vpc_external_nat_ip_ids` | String | **Existing** comma separated list of IP IDs if reusing. (ElasticIPs). |
 | `aws_vpc_additional_tags` | JSON | A JSON object of additional tags that will be included on created resources. Example: `{"key1": "value1", "key2": "value2"}` |
 <hr/>
 <br/>
