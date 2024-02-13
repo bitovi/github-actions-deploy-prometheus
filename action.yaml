@@ -349,6 +349,7 @@ runs:
       with:
         # Current repo vars
         checkout: false
+        ansible_skip: false
         gh_action_repo: ${{ github.action_path }}
         gh_action_input_ansible: operations/deployment/ansible
 
