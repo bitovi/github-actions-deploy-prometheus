@@ -230,7 +230,6 @@ runs:
 
     # take the grafana datasource and prometheus config and put them in the right place (root of the deployment repo)
     - name: Copy Observability Data
-      if: ${{ inputs.infrastructure_only == 'false' }}
       shell: bash
       env:
         GITHUB_ACTION_PATH: ${{ github.action_path }}
@@ -324,7 +323,6 @@ runs:
 
     # copy the deployment from the github action path to the github workspace
     - name: Copy Deployment Config
-      if: ${{ inputs.infrastructure_only == 'false' }}
       shell: bash
       env:
         GITHUB_ACTION_PATH: ${{ github.action_path }}
