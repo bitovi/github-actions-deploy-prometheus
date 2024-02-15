@@ -237,7 +237,6 @@ The following inputs can be used as `step.with` keys
 | `aws_elb_create` | Boolean | Toggles the creation of a load balancer and map ports to the EC2 instance. Defaults to `true`.|
 | `aws_elb_app_port` | String | Port in the EC2 instance to be redirected to. Default is `9090,3000`. | 
 | `aws_elb_listen_port` | String | Load balancer listening port. Default is `9090,3000`. |
-<hr/>
 <br/>
 
 `aws_ec2_instance_public_ip` is a must if deployment is done using GitHub runners. Needed to access instance and install Docker. Only set this to `false` if using a self-hosted GitHub runner with access to your private IP.
@@ -261,7 +260,6 @@ ELB is a **must** if you intend to use DNS and/or certificates. (`aws_elb_create
 | node-exporter | 9100 | 
 <br/>
 <hr/>
-<br/>
 
 #### **Action Outputs**
 | Name             | Description                        |
