@@ -259,7 +259,9 @@ ELB is a **must** if you intend to use DNS and/or certificates. (`aws_elb_create
 | Prometheus | 9090 |
 | cadvisor | 8080 |
 | node-exporter | 9100 | 
-
+<br/>
+<hr/>
+<br/>
 
 #### **Action Outputs**
 | Name             | Description                        |
