@@ -121,6 +121,8 @@ jobs:
 8. [VPC](#vpc-inputs)
 9. [Advanced Options](#advanced-options)
 
+### Outputs
+1. [Action Outputs](#action-outputs)
 
 The following inputs can be used as `step.with` keys
 <br/>
@@ -257,6 +259,18 @@ ELB is a **must** if you intend to use DNS and/or certificates. (`aws_elb_create
 | Prometheus | 9090 |
 | cadvisor | 8080 |
 | node-exporter | 9100 | 
+
+
+#### **Action Outputs**
+| Name             | Description                        |
+|------------------|------------------------------------|
+| `aws_vpc_id` | The selected VPC ID used. |
+| `vm_url` | The URL of the generated app. |
+| `instance_endpoint` | The URL of the generated ec2 instance. |
+| `ec2_sg_id` | SG ID for the EC2 instance. |
+<hr/>
+<br/>
+
 
 ## Environment variables
 
