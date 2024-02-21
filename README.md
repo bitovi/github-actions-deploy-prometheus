@@ -54,8 +54,8 @@ jobs:
       name: Deploy
       uses: bitovi/github-actions-deploy-prometheus@v0.1.1
       with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID}}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         env_ghs: ${{ secrets.DOT_ENV }}
 ```
 
@@ -87,7 +87,7 @@ jobs:
         aws_ec2_instance_type: t2.small
         aws_additional_tags: "{\"key1\": \"value1\",\"key2\": \"value2\"}"
 
-        aws_r53_domain_name: bitovi.com
+        aws_r53_domain_name: example.com
         aws_r53_sub_domain_name: app
 
         env_ghs: ${{ secrets.DOT_ENV }}
